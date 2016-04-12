@@ -8,6 +8,10 @@
     "perspective",
     "glisy"
   ],
+  "src": [
+    "include/glisy/camera.h",
+    "src/camera.c"
+  ],
   "dependencies": {
     "glisy/gl": "0.0.1",
     "glisy/math": "0.0.4",
