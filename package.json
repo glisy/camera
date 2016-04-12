@@ -14,7 +14,7 @@
   ],
   "dependencies": {
     "glisy/gl": "0.0.1",
-    "glisy/math": "0.0.4",
+    "glisy/math": "0.0.6",
     "glisy/uniform": "0.0.1",
     "glisy/geometry": "0.0.2"
   },

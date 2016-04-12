@@ -21,10 +21,16 @@ GlisyProgram program;
 GlisyShader fragment;
 GlisyShader vertex;
 
-GLFWwindow *window;
 const char *name = "Camera Test";
-int height = 640;
-int width = 640;
+int keys[BUFSIZ];
+int firstMouse = 1;
+int height = 600;
+int width = 800;
+
+GLFWwindow *window;
+GLfloat lastX = 400, lastY = 300;
+GLfloat deltaTime = 0.0f;
+GLfloat lastTime = 0.0f;
 
 // model
 typedef struct Cube Cube;
@@ -74,7 +80,7 @@ InitializeCube(Cube *cube) {
 
   glisyUniformInit(&cube->model, "model", GLISY_UNIFORM_MATRIX, 4);
 
-  cube->position = vec3(0, 0, 0);
+  cube->position = vec3(2.0f, 5.0f, -15.0f);
   cube->faceslen = sizeof(faces) / sizeof(GLushort);
   GLuint size = sizeof(vertices);
 
@@ -126,13 +132,88 @@ RotateCube(Cube *cube, float radians, vec3 axis) {
   (void) mat4_rotate(cube->rotation, radians, axis);
 }
 
+void
+onMouseMove(GLFWwindow *window, double x, double y) {
+  GlisyCamera *camera = (GlisyCamera *) glfwGetWindowUserPointer(window);
+
+  if (firstMouse) {
+    lastX = x;
+    lastY = y;
+    firstMouse = 0;
+  }
+
+  GLfloat friction = 0.25;
+  GLfloat xoffset = x - lastX;
+  GLfloat yoffset = lastY - y;  // Reversed since y-coordinates go from bottom to left
+
+  lastX = x;
+  lastY = y;
+
+  xoffset *= friction;
+  yoffset *= friction;
+
+  camera->rotation.x -= xoffset;
+  camera->rotation.y -= yoffset;
+
+  if (camera->rotation.y > 89.0f) {
+    camera->rotation.y = 89.0f;
+  }
+
+  if (camera->rotation.y < -89.0f) {
+    camera->rotation.y = -89.0f;
+  }
+}
+
+void
+onKeyPress(GLFWwindow *window, int key, int scancode, int action, int mods) {
+  GLfloat speed = 8.0;
+  GLfloat velocity = speed * deltaTime;
+  GlisyCamera *camera = (GlisyCamera *) glfwGetWindowUserPointer(window);
+
+  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+    glfwSetWindowShouldClose(window, GL_TRUE);
+  }
+
+  if (key >= 0 && key < 1024) {
+    if (action == GLFW_PRESS) {
+      keys[key] = 1;
+    } else if (action == GLFW_RELEASE) {
+      keys[key] = 0;
+    }
+  }
+
+  vec3 position = camera->position;
+  if (keys[GLFW_KEY_W]) {
+    position = vec3_add(position, vec3_scale(camera->front, velocity));
+  }
+
+  if (keys[GLFW_KEY_S]) {
+    position = vec3_subtract(position, vec3_scale(camera->front, velocity));
+  }
+
+  if (keys[GLFW_KEY_A]) {
+    position = vec3_add(position, vec3_scale(camera->right, velocity));
+  }
+
+  if (keys[GLFW_KEY_D]) {
+    position = vec3_subtract(position, vec3_scale(camera->right, velocity));
+  }
+
+  camera->position = vec3_lerp(position, camera->position, deltaTime);
+  glisyCameraUpdate(camera);
+}
+
 int
 main (void) {
-  PerspectiveCamera camera;
+  GlisyCamera camera;
   Cube cube;
 
-  GLFW_SHELL_CONTEXT_INIT(3, 2);
+  GLFW_SHELL_CONTEXT_INIT(3, 3);
   GLFW_SHELL_WINDOW_INIT(window, width, height);
+
+  glfwSetCursorPosCallback(window, onMouseMove);
+  glfwSetKeyCallback(window, onKeyPress);
+  glfwSetWindowUserPointer(window, &camera);
 
   // initialize program
   glisyProgramInit(&program);
@@ -143,11 +224,16 @@ main (void) {
   glisyProgramLink(&program);
   glisyProgramBind(&program);
 
-  InitializePerspectiveCamera(&camera, width, height);
+  // camera
+  glisyCameraInitialize(&camera);
+  glisyCameraUpdate(&camera);
+
+  // objects
   InitializeCube(&cube);
 
   // move camera behind cube
-  camera.position = vec3(1, 1, 1);
+  float fov = M_PI / 4;
+  camera.position = vec3(0, 0, -5);
 
   // start loop
   GLFW_SHELL_RENDER(window, {
@@ -155,15 +241,23 @@ main (void) {
     const float angle = time * 25.0f;
     const float radians = angle * (M_PI / 180);
     const vec3 rotation = vec3(0, 1, 0);
-    (void) mat4_rotate(camera.transform,
-                       radians,
-                       rotation);
 
-    // handle resize
-    camera.aspect = width / height;
+    deltaTime = time - lastTime;
+    lastTime = time;
 
-    // update camera orientation
-    UpdatePerspectiveCamera(&camera);
+    glisyCameraUpdate(&camera);
+    mat4 view = glisyCameraGetViewMatrix(&camera);
+    mat4 projection = mat4_perspective(fov, (width / height), 0.1, 1000.0);
+    GlisyUniform uProjection;
+    GlisyUniform uView;
+
+    glisyUniformInit(&uView, "view", GLISY_UNIFORM_MATRIX, 4);
+    glisyUniformSet(&uView, &view, sizeof(mat4));
+    glisyUniformBind(&uView, 0);
+
+    glisyUniformInit(&uProjection, "projection", GLISY_UNIFORM_MATRIX, 4);
+    glisyUniformSet(&uProjection, &projection, sizeof(mat4));
+    glisyUniformBind(&uProjection, 0);
 
     // rotate cube at radians angle in opposite direction
     RotateCube(&cube, radians, vec3_negate(rotation));

@@ -9,46 +9,26 @@
 extern "C" {
 #endif
 
-typedef struct PerspectiveCamera PerspectiveCamera;
-struct PerspectiveCamera {
-  mat4 projection;
-  mat4 transform;
-  mat4 view;
+#define GLISY_CAMERA_FIELDS_COMMON \
 
+typedef struct GlisyCamera GlisyCamera;
+struct GlisyCamera {
+  euler rotation;
   vec3 position;
-  vec3 target;
+  vec3 worldUp;
+  vec3 front;
+  vec3 right;
   vec3 up;
-
-  struct {
-    GlisyUniform projection;
-    GlisyUniform view;
-  } uniforms;
-
-  struct {
-    vec3 direction;
-    vec3 right;
-    vec3 up;
-  } orientation;
-
-  float aspect;
-  float near;
-  float far;
-  float fov;
 };
 
 void
-InitializePerspectiveCamera(PerspectiveCamera *camera,
-                            int width,
-                            int height);
+glisyCameraInitialize(GlisyCamera *camera);
+
+mat4
+glisyCameraGetViewMatrix(GlisyCamera *camera);
 
 void
-UpdatePerspectiveCameraProjectionMatrix(PerspectiveCamera *camera);
-
-void
-UpdatePerspectiveCameraLookAt(PerspectiveCamera *camera);
-
-void
-UpdatePerspectiveCamera(PerspectiveCamera *camera);
+glisyCameraUpdate(GlisyCamera *camera);
 
 #ifdef __cplusplus
 }

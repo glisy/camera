@@ -1,67 +1,39 @@
 #include <glisy/uniform.h>
 #include <glisy/camera.h>
 #include <glisy/math.h>
+#include <string.h>
 
 void
-UpdatePerspectiveCameraProjectionMatrix(PerspectiveCamera *camera) {
-  camera->projection = mat4_perspective(camera->fov,
-                                        camera->aspect,
-                                        camera->near,
-                                        camera->far);
-  glisyUniformSet(&camera->uniforms.projection,
-                  &camera->projection,
-                  sizeof(camera->projection));
-  glisyUniformBind(&camera->uniforms.projection, 0);
-}
-
-void
-UpdatePerspectiveCameraLookAt(PerspectiveCamera *camera) {
-  vec3 target = camera->target;
-  vec3 position = vec3_transform_mat4(camera->position,
-                                      camera->transform);
-  camera->view = mat4_lookAt(position, target, camera->up);
-  glisyUniformBind(&camera->uniforms.view, 0);
-  mat4_identity(camera->transform);
-}
-
-void
-UpdatePerspectiveCamera(PerspectiveCamera *camera) {
-  camera->orientation.direction =
-    vec3_normalize(vec3_subtract(camera->position, camera->target));
-
-  camera->orientation.right =
-    vec3_normalize(vec3_cross(camera->up, camera->orientation.direction));
-
-  glisyUniformSet(&camera->uniforms.view,
-                    &camera->view,
-                    sizeof(camera->view));
-
-  UpdatePerspectiveCameraProjectionMatrix(camera);
-  UpdatePerspectiveCameraLookAt(camera);
-}
-
-void
-InitializePerspectiveCamera(PerspectiveCamera *camera, int width, int height) {
+glisyCameraInitialize(GlisyCamera *camera) {
+  if (!camera) { return; }
+  camera->rotation = euler(90.0f, +0.0f, +0.0f);
   camera->position = vec3(0, 0, 0);
-  camera->target = vec3(0, 0, 0);
-  camera->up = vec3(0, 1, 0);
+  camera->worldUp = vec3(0, 1, 0);
+  camera->front = vec3(0, 0, -1);
+}
 
-  camera->aspect = width / height;
-  camera->near = 1.0f;
-  camera->far = 1000.0f;
-  camera->fov = 45.0f;
+mat4
+glisyCameraGetViewMatrix(GlisyCamera *camera) {
+  mat4 view;
+  memset(&view, 0, sizeof(mat4));
+  if (!camera) { return view; }
+  vec3 position = camera->position;
+  vec3 target = vec3_add(position, camera->front);
+  vec3 up = camera->up;
+  view = mat4_lookAt(position, target, up);
+  return view;
+}
 
-  mat4_identity(camera->projection);
-  mat4_identity(camera->transform);
-  mat4_identity(camera->view);
-
-  glisyUniformInit(&camera->uniforms.projection,
-                   "projection",
-                   GLISY_UNIFORM_MATRIX, 4);
-
-  glisyUniformInit(&camera->uniforms.view,
-                   "view",
-                   GLISY_UNIFORM_MATRIX, 4);
-
-  UpdatePerspectiveCamera(camera);
+void
+glisyCameraUpdate(GlisyCamera *camera) {
+  if (!camera) { return; }
+  euler rotation = camera->rotation;
+  vec3 front = {
+    cosf(glisy_radians(rotation.x)) * cosf(glisy_radians(rotation.y)),
+    sinf(glisy_radians(rotation.y)),
+    sinf(glisy_radians(rotation.x)) * cosf(glisy_radians(rotation.y))
+  };
+  camera->front = vec3_normalize(front);
+  camera->right = vec3_normalize(vec3_cross(camera->front, camera->worldUp));
+  camera->up = vec3_normalize(vec3_cross(camera->right, camera->front));
 }
