@@ -41,6 +41,7 @@ struct Cube {
 
   // gl
   vec3 position;
+  vec3 scale;
   mat4 transform;
   mat4 rotation;
 
@@ -57,15 +58,15 @@ static void RotateCube(Cube *cube, float radians, vec3 axis);
 void
 InitializeCube(Cube *cube) {
   const vec3 vertices[] = {
-    vec3(-0.5, -0.5, +0.5),
-    vec3(+0.5, -0.5, +0.5),
-    vec3(-0.5, +0.5, +0.5),
-    vec3(+0.5, +0.5, +0.5),
+    vec3(-1.0, -1.0, +1.0),
+    vec3(+1.0, -1.0, +1.0),
+    vec3(-1.0, +1.0, +1.0),
+    vec3(+1.0, +1.0, +1.0),
 
-    vec3(-0.5, -0.5, -0.5),
-    vec3(+0.5, -0.5, -0.5),
-    vec3(-0.5, +0.5, -0.5),
-    vec3(+0.5, +0.5, -0.5),
+    vec3(-1.0, -1.0, -1.0),
+    vec3(+1.0, -1.0, -1.0),
+    vec3(-1.0, +1.0, -1.0),
+    vec3(+1.0, +1.0, -1.0),
   };
 
 
@@ -80,7 +81,8 @@ InitializeCube(Cube *cube) {
 
   glisyUniformInit(&cube->model, "model", GLISY_UNIFORM_MATRIX, 4);
 
-  cube->position = vec3(2.0f, 5.0f, -15.0f);
+  cube->position = vec3(0, 0, 0);
+  cube->scale = vec3(1, 1, 1);
   cube->faceslen = sizeof(faces) / sizeof(GLushort);
   GLuint size = sizeof(vertices);
 
@@ -114,6 +116,8 @@ void
 UpdateCube(Cube *cube) {
   mat4 model;
   mat4_identity(model);
+  model = mat4_translate(model, cube->position);
+  model = mat4_scale(model, cube->scale);
   model = mat4_multiply(model, cube->rotation);
   glisyUniformSet(&cube->model, &model, sizeof(model));
   glisyUniformBind(&cube->model, 0);
@@ -166,7 +170,7 @@ onMouseMove(GLFWwindow *window, double x, double y) {
 
 void
 onKeyPress(GLFWwindow *window, int key, int scancode, int action, int mods) {
-  GLfloat speed = 8.0;
+  GLfloat speed = 50.0;
   GLfloat velocity = speed * deltaTime;
   GlisyCamera *camera = (GlisyCamera *) glfwGetWindowUserPointer(window);
 
@@ -183,23 +187,26 @@ onKeyPress(GLFWwindow *window, int key, int scancode, int action, int mods) {
   }
 
   vec3 position = camera->position;
+  vec3 target = position;
+
   if (keys[GLFW_KEY_W]) {
-    position = vec3_add(position, vec3_scale(camera->front, velocity));
+    target = vec3_add(position, vec3_scale(camera->front, velocity));
   }
 
   if (keys[GLFW_KEY_S]) {
-    position = vec3_subtract(position, vec3_scale(camera->front, velocity));
+     target = vec3_subtract(position, vec3_scale(camera->front, velocity));
   }
 
   if (keys[GLFW_KEY_A]) {
-    position = vec3_add(position, vec3_scale(camera->right, velocity));
+    target = vec3_subtract(position, vec3_scale(camera->right, velocity));
   }
 
   if (keys[GLFW_KEY_D]) {
-    position = vec3_subtract(position, vec3_scale(camera->right, velocity));
+    target = vec3_add(position, vec3_scale(camera->right, velocity));
   }
 
-  camera->position = vec3_lerp(position, camera->position, deltaTime);
+  position = vec3_lerp(position, target, 2.0 * M_PI * deltaTime);
+  vec3_copy(camera->position, position);
   glisyCameraUpdate(camera);
 }
 
@@ -232,8 +239,17 @@ main (void) {
   InitializeCube(&cube);
 
   // move camera behind cube
-  float fov = M_PI / 4;
-  camera.position = vec3(0, 0, -5);
+  float fov = M_PI / 3.0;
+  float zoom = 100.0;
+
+  cube.scale = vec3(0.25, 0.25, 0.25);
+
+  enum {ORTHO, PERSPECTIVE};
+  float near = 0.1;
+  float far = 1000.0;
+  //int mode = ORTHO;
+  int mode = PERSPECTIVE;
+  camera.position.z = -2.0;
 
   // start loop
   GLFW_SHELL_RENDER(window, {
@@ -241,15 +257,38 @@ main (void) {
     const float angle = time * 25.0f;
     const float radians = angle * (M_PI / 180);
     const vec3 rotation = vec3(0, 1, 0);
+    float aspect = width / height;
 
     deltaTime = time - lastTime;
     lastTime = time;
 
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
     glisyCameraUpdate(&camera);
     mat4 view = glisyCameraGetViewMatrix(&camera);
-    mat4 projection = mat4_perspective(fov, (width / height), 0.1, 1000.0);
     GlisyUniform uProjection;
     GlisyUniform uView;
+    mat4 projection;
+
+    switch (mode) {
+      case ORTHO:
+        if (aspect >= 1.0) {
+          projection = mat4_ortho(-1.0, (height / width) * aspect,
+                                  -1.0, (height / width),
+                                  -near, far);
+        } else {
+          projection = mat4_ortho(-1.0, height / width,
+                                  -1.0 / aspect,
+                                  (height / width) / aspect,
+                                  -near, far);
+        }
+        break;
+
+      case PERSPECTIVE:
+        projection = mat4_perspective(fov, aspect, near, far);
+        break;
+
+    }
 
     glisyUniformInit(&uView, "view", GLISY_UNIFORM_MATRIX, 4);
     glisyUniformSet(&uView, &view, sizeof(mat4));

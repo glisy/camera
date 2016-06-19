@@ -1,9 +1,7 @@
 #ifndef GLISY_CAMERA_H
 #define GLISY_CAMERA_H
 
-#include <glisy/uniform.h>
 #include <glisy/math.h>
-#include <glisy/gl.h>
 
 #ifdef __cplusplus
 extern "C" {

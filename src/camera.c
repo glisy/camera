@@ -1,4 +1,3 @@
-#include <glisy/uniform.h>
 #include <glisy/camera.h>
 #include <glisy/math.h>
 #include <string.h>

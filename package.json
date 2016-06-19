@@ -13,17 +13,17 @@
     "src/camera.c"
   ],
   "dependencies": {
-    "glisy/gl": "0.0.1",
     "glisy/math": "0.0.6",
-    "glisy/uniform": "0.0.1",
     "glisy/geometry": "0.0.2"
   },
   "development": {
-    "glisy/glfw-shell": "0.0.5",
+    "littlstar/soil": "master",
     "jwerle/fs.c": "0.1.2",
-    "glisy/texture": "0.0.1",
-    "glisy/program": "0.0.4",
-    "glisy/shader": "0.0.1",
-    "littlstar/soil": "0.0.2"
+    "glisy/glfw-shell": "master",
+    "glisy/texture": "master",
+    "glisy/uniform": "master",
+    "glisy/program": "master",
+    "glisy/shader": "master",
+    "glisy/gl": "master"
   }
 }
