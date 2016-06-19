@@ -13,8 +13,8 @@
     "src/camera.c"
   ],
   "dependencies": {
-    "glisy/math": "0.0.6",
-    "glisy/geometry": "0.0.2"
+    "glisy/math": "master",
+    "glisy/geometry": "master"
   },
   "development": {
     "littlstar/soil": "master",

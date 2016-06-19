@@ -247,8 +247,8 @@ main (void) {
   enum {ORTHO, PERSPECTIVE};
   float near = 0.1;
   float far = 1000.0;
-  //int mode = ORTHO;
-  int mode = PERSPECTIVE;
+  int mode = ORTHO;
+  //int mode = PERSPECTIVE;
   camera.position.z = -2.0;
 
   // start loop
@@ -273,13 +273,12 @@ main (void) {
     switch (mode) {
       case ORTHO:
         if (aspect >= 1.0) {
-          projection = mat4_ortho(-1.0, (height / width) * aspect,
+          projection = mat4_ortho(-1.0 * aspect, (height / width) * aspect,
                                   -1.0, (height / width),
                                   -near, far);
         } else {
           projection = mat4_ortho(-1.0, height / width,
-                                  -1.0 / aspect,
-                                  (height / width) / aspect,
+                                  -1.0 / aspect, (height / width) / aspect,
                                   -near, far);
         }
         break;
