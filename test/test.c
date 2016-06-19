@@ -257,7 +257,8 @@ main (void) {
     const float angle = time * 25.0f;
     const float radians = angle * (M_PI / 180);
     const vec3 rotation = vec3(0, 1, 0);
-    float aspect = width / height;
+    float aspect = (float) width / (float) height;
+    float delta = (float) height / (float) width;
 
     deltaTime = time - lastTime;
     lastTime = time;
@@ -273,12 +274,12 @@ main (void) {
     switch (mode) {
       case ORTHO:
         if (aspect >= 1.0) {
-          projection = mat4_ortho(-1.0 * aspect, (height / width) * aspect,
-                                  -1.0, (height / width),
+          projection = mat4_ortho(-1.0 * aspect, delta * aspect,
+                                  -1.0, delta,
                                   -near, far);
         } else {
-          projection = mat4_ortho(-1.0, height / width,
-                                  -1.0 / aspect, (height / width) / aspect,
+          projection = mat4_ortho(-1.0, delta,
+                                  -1.0 / aspect, delta / aspect,
                                   -near, far);
         }
         break;
