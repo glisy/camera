@@ -19,8 +19,10 @@ struct GlisyCamera {
   vec3 up;
 };
 
+#define glisyCameraInitialize glisyCameraInit
+
 void
-glisyCameraInitialize(GlisyCamera *camera);
+glisyCameraInit(GlisyCamera *camera);
 
 mat4
 glisyCameraGetViewMatrix(GlisyCamera *camera);

@@ -3,7 +3,7 @@
 #include <string.h>
 
 void
-glisyCameraInitialize(GlisyCamera *camera) {
+glisyCameraInit(GlisyCamera *camera) {
   if (!camera) { return; }
   camera->rotation = euler(90.0f, +0.0f, +0.0f);
   camera->position = vec3(0, 0, 0);
